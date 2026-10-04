@@ -22,6 +22,16 @@ export class Renderer {
         this.panY,
     };
   }
+  centerOn(tile: Tile) {
+    const p = this.project(tile.x + 0.5, tile.y + 0.5, tile.height * 0.23);
+    this.panX += this.width / 2 - p.x;
+    this.panY += this.height * 0.6 - p.y;
+  }
+  reveal(tile: Tile) {
+    const p = this.project(tile.x + 0.5, tile.y + 0.5, tile.height * 0.23);
+    if (p.x < 45 || p.x > this.width - 45 || p.y < 60 || p.y > this.height - 75)
+      this.centerOn(tile);
+  }
   private scale() {
     return Math.min(this.width / 43, this.height / 25) * this.zoom;
   }

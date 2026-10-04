@@ -4,9 +4,9 @@ An original, local-first voxel colony game for a browser. Three travelers arrive
 
 ## Play
 
-Start with **1×**. Select **Gather**, then tap trees, berry bushes or stone blocks. Settlers harvest and haul to the central hearth. Place a **garden** and a **cabin** on clear tiles; materials are reserved immediately. Gather more supplies to build two more cabins and a beacon. A garden provides 8 food each minute. Click each settler's priority to favor gathering or building. Eating, rest and hauling are automatic.
+Start with **1×**. Select **Gather**, then tap trees, berry bushes or stone blocks. Settlers harvest and haul to the central hearth. Place a **garden** and a **cabin** on clear tiles; materials are reserved immediately. Gather more supplies to build two more cabins and a beacon. A garden provides 8 food each minute. Set each settler's Gather and Build priorities: 1 first, 2 next, 3 last. Equal priorities choose nearby work. Resource claims prevent duplicate harvesting trips. Eating, rest and hauling are automatic.
 
-Drag to pan, scroll or +/− to zoom, tap to select. Space pauses; 1/3 select speed. Touch uses the same tools and one-finger drag. The field guide is under **?**. The simulation starts paused and pauses when its tab is hidden. Save/Load use this browser's local storage; autosave runs every 30 seconds. Valid saves restore automatically after refresh, with time paused. Reset asks before replacing the save. Storage failure is reported.
+Drag to pan, scroll or +/− to zoom, tap to select. Space pauses; 1/3 select speed. Touch uses the same tools and one-finger drag. Focus the map and use arrow keys to select, Home for the hearth, Enter to apply the tool and Escape for Inspect. The selected-tile panel provides descriptions, large direction buttons and an apply action. Home buttons locate settlers or their assigned cabins. The field guide is under **?**. The simulation starts paused and pauses when its tab is hidden. Save/Load use this browser's local storage; autosave runs every 30 seconds. Valid saves restore automatically after refresh, with time paused. Reset asks before replacing the save. Storage failure is reported.
 
 ## Develop and verify
 
@@ -33,12 +33,12 @@ Local browser tests use `/usr/bin/chromium` when available; set `PLAYWRIGHT_CHRO
 - `src/main.ts`: controls, fixed-step accumulator, visibility pause, local persistence and UI.
 - `tests/`: simulation/replay/whole-survival regressions. `e2e/`: real Chromium browser flows at desktop and phone dimensions.
 
-Buildings are traversable to avoid enclosure deadlocks. One completed cabin currently shelters all resting settlers; victory requires three cabins. Settlers move on integer tiles. Terrain is generated from a fixed default seed; campaign variety, combat, individual beds, audio, keyboard map navigation and exportable saves are future work. Victory/loss ends the current simulation. This is a scoped first playable release.
+Buildings are traversable to avoid enclosure deadlocks. Each completed cabin automatically receives one living settler as its stable owner. Only that owner rests inside; unsheltered settlers rest outdoors more slowly. Victory requires three cabins. Settlers move on integer tiles. Terrain is generated from a fixed default seed; campaign variety, combat, audio and exportable saves are future work. Version-1 foundation saves migrate automatically to version 2 under the existing storage key, retaining world/time/resources and mapping legacy preferences to numeric priorities. The old foundation build cannot read version-2 saves. Victory/loss ends the current simulation. This is a scoped first playable release.
 
 ## CI and publishing
 
 GitHub Actions runs lint, simulation tests, strict type/build checks and browser tests on pushes and PRs. It uploads the static `dist` output plus screenshot/test evidence. Workflow permissions are only `contents: read`; no deployment credentials are required.
 
-**Publication destination: ChatGPT Sites.** This repository is the public development source. Sites uses its supported connector-managed source/version/deploy workflow. There is no verified GitHub Actions-to-Sites API: CI produces a release artifact, and a Sites-capable session must perform and verify publication. Do not silently deploy to another host. One-time Site creation and any required source transfer must be completed through supported tooling. Parent session owns that coordination.
+**Publication destination: ChatGPT Sites.** This repository is the public development source. Sites uses its supported connector-managed source/version/deploy workflow. There is no verified GitHub Actions-to-Sites API: CI produces a release artifact, and a Sites-capable session must perform and verify publication. Do not silently deploy to another host. The parent has published the foundation with private Site access; the public repository does not change that audience. Reuse the existing Site for later source transfers. Parent session owns that coordination.
 
 See [roadmap and acceptance criteria](docs/ROADMAP.md), [contributor rules](AGENTS.md), and [release verification](docs/VERIFICATION.md).

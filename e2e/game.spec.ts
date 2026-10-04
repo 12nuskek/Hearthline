@@ -25,9 +25,9 @@ for (const mobile of [false, true])
     await page.getByRole("button", { name: "Pause", exact: true }).click();
     await page.getByRole("button", { name: "Load", exact: true }).click();
     await expect(page.getByRole("status")).toContainText("restored");
-    await page.getByRole("button", { name: "Jun priority: gather" }).click();
+    await page.getByRole("button", { name: "Jun gather priority 1" }).click();
     await expect(
-      page.getByRole("button", { name: "Jun priority: build" }),
+      page.getByRole("button", { name: "Jun gather priority 2" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Open field guide" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
@@ -187,4 +187,73 @@ test("a completed simulation restores as a visible terminal settlement", async (
   await page.goto("/");
   await expect(page.locator("#hint")).toContainText("A home at last");
   await page.screenshot({ path: "/tmp/hearthline-victory.png" });
+});
+test("keyboard map navigation builds and reports selected terrain without pointer input", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.locator('[data-tool="cabin"]').focus();
+  await page.keyboard.press("Space");
+  const map = page.getByRole("application", { name: "Settlement map" });
+  await map.focus();
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.locator("#tile-description")).toContainText(
+    "Tile 7, 7. Meadow",
+  );
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("status")).toContainText("planned");
+  await expect(page.locator("#tile-description")).toContainText("cabin, 0%");
+  await page.keyboard.press("Escape");
+  await expect(page.locator('[data-tool="inspect"]')).toHaveClass("active");
+  await page.keyboard.press("Tab");
+  await expect(map).not.toBeFocused();
+  await page.getByRole("button", { name: "Select east tile" }).click();
+  await expect(page.locator("#tile-description")).toContainText("Tile 8, 7");
+  await page.getByRole("button", { name: "Jun gather priority 1" }).focus();
+  await page.keyboard.press("Space");
+  await expect(
+    page.getByRole("button", { name: "Jun gather priority 2" }),
+  ).toBeFocused();
+  await page.getByRole("button", { name: "Normal speed" }).click();
+  await page.getByRole("button", { name: "Jun gather priority 2" }).focus();
+  await page.waitForTimeout(1200);
+  await expect(
+    page.getByRole("button", { name: "Jun gather priority 2" }),
+  ).toBeFocused();
+});
+test("foundation save restores assigned homes and new priorities in the browser", async ({
+  page,
+}) => {
+  const { readFileSync } = await import("node:fs");
+  const raw = readFileSync(
+    new URL("../tests/fixtures/foundation-v1.json", import.meta.url),
+    "utf8",
+  );
+  await page.addInitScript(
+    (raw) => localStorage.setItem("hearthline.save.v1", raw),
+    raw,
+  );
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Locate Jun home" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Jun gather priority 1" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Mira build priority 1" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Locate Jun home" }).click();
+  await expect(page.locator("#tile-description")).toContainText("Jun’s home");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const saved = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("hearthline.save.v1")!),
+  );
+  expect(saved.version).toBe(2);
+  expect(saved.tick).toBe(80);
+  await page.screenshot({ path: "/tmp/hearthline-homes.png", fullPage: true });
 });
