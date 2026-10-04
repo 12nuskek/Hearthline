@@ -53,6 +53,11 @@ export type World = {
 };
 export const SIZE = 20,
   DAY = 240;
+const HUNGER_DRAIN = 0.16,
+  ENERGY_DRAIN = 0.12,
+  EAT_BELOW = 65,
+  REST_BELOW = 25,
+  NIGHT_REST_BELOW = 90;
 export const COST: Record<Building, Partial<Record<Resource, number>>> = {
   cabin: { wood: 12, stone: 4 },
   garden: { wood: 6 },
@@ -125,6 +130,8 @@ export function command(
   if (tool === "gather") {
     if (!t.resource) return "Choose a tree, berry bush, or stone.";
     t.marked = !t.marked;
+    if (!t.marked)
+      for (const p of w.people) if (p.claim === index) p.claim = null;
     return t.marked
       ? "Gathering marked. Settlers will harvest and haul."
       : "Gathering cancelled.";
@@ -224,9 +231,9 @@ export function step(w: World): void {
       !t.marked ||
       p.carry ||
       p.health <= 0 ||
-      (p.hunger - 0.16 < 65 && w.stock.food > 0) ||
-      p.energy - 0.12 < 25 ||
-      (night && p.energy - 0.12 < 90)
+      (p.hunger - HUNGER_DRAIN < EAT_BELOW && w.stock.food > 0) ||
+      p.energy - ENERGY_DRAIN < REST_BELOW ||
+      (night && p.energy - ENERGY_DRAIN < NIGHT_REST_BELOW)
     )
       p.claim = null;
   }
@@ -235,10 +242,10 @@ export function step(w: World): void {
       p.job = "Lost";
       continue;
     }
-    p.hunger = Math.max(0, p.hunger - 0.16);
-    p.energy = Math.max(0, p.energy - 0.12);
+    p.hunger = Math.max(0, p.hunger - HUNGER_DRAIN);
+    p.energy = Math.max(0, p.energy - ENERGY_DRAIN);
     p.target = null;
-    if (p.hunger < 65 && w.stock.food > 0) {
+    if (p.hunger < EAT_BELOW && w.stock.food > 0) {
       if (walk(w, p, 9 * SIZE + 9)) {
         w.stock.food--;
         p.hunger = Math.min(100, p.hunger + 24);
@@ -248,7 +255,7 @@ export function step(w: World): void {
     }
     if (p.hunger === 0) p.health = Math.max(0, p.health - 0.25);
     else if (p.hunger > 50) p.health = Math.min(100, p.health + 0.03);
-    if (p.energy < 25 || (night && p.energy < 90)) {
+    if (p.energy < REST_BELOW || (night && p.energy < NIGHT_REST_BELOW)) {
       const bed = p.home === null ? undefined : w.tiles[p.home];
       if (bed && !walk(w, p, bed.y * SIZE + bed.x)) {
         p.job = "Going to shelter";
@@ -410,6 +417,19 @@ export function restore(raw: string): World {
   )
     throw Error("Damaged save");
   assignHomes(w);
+  const claimed = new Set<number>();
+  for (const p of w.people) {
+    const t = p.claim === null ? undefined : w.tiles[p.claim];
+    if (
+      !t?.resource ||
+      !t.marked ||
+      p.carry ||
+      p.health <= 0 ||
+      claimed.has(p.claim!)
+    )
+      p.claim = null;
+    else claimed.add(p.claim!);
+  }
   return w;
 }
 

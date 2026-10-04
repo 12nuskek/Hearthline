@@ -192,3 +192,13 @@ test("saving exactly when a cabin completes keeps replay state unchanged", () =>
     expect(restore(serialize(w))).toEqual(w);
   }
 });
+test("restoring a paused save normalizes stale or duplicate gather claims", () => {
+  const w = createWorld();
+  const i = w.tiles.findIndex((t) => t.resource === "wood");
+  command(w, i, "gather");
+  w.people[0].claim = i;
+  w.people[1].claim = i;
+  w.people[2].claim = 189;
+  const loaded = restore(serialize(w));
+  expect(loaded.people.map((p) => p.claim)).toEqual([i, null, null]);
+});

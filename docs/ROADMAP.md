@@ -15,11 +15,8 @@ GitHub tracking: [foundation #1](https://github.com/12nuskek/Hearthline/issues/1
 
 Selected acceptance criteria from #2: stable one-settler cabin assignments; 1–3 gather/build priorities; exclusive resource claims with interruption recovery; keyboard tile selection, live descriptions and apply controls; migration of existing version-1 saves. Map-seed selection and physical-device validation remain future work.
 
-## Next issue: richer work and shelter
-Acceptance: individual bed assignments; limited cabin capacity; per-job numeric priorities; resource claims prevent duplicate travel; regression tests for interrupted work.
-
-## Next issue: terrain and accessibility
-Acceptance: keyboard-addressable map tiles; screen-reader tile descriptions; larger optional touch targets; different reproducible map seeds; physical iOS/Android verification.
+## Remaining work and accessibility follow-up
+Homes, numeric priorities, resource claims, keyboard tile selection and descriptions are implemented in the current draft iteration. Remaining criteria: manual bed reassignment; user-selectable reproducible map seeds; physical iOS/Android and screen-reader verification. Optional larger map zoom presets can improve low-vision use.
 
 ## Next issue: persistent campaign
 Acceptance: versioned migrations, export/import saves, recovery slots and user-visible save timestamp; no data loss on refresh; optional endless continuation after victory.
