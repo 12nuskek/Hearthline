@@ -25,6 +25,8 @@ export const JOBS = [
   "Gathering",
   "Building",
 ] as const;
+export type WorkKind = "gather" | "build";
+export type Priority = 1 | 2 | 3;
 export type Person = {
   name: string;
   x: number;
@@ -33,12 +35,14 @@ export type Person = {
   energy: number;
   health: number;
   job: (typeof JOBS)[number];
-  priority: "gather" | "build";
+  priorities: Record<WorkKind, Priority>;
+  claim: number | null;
   carry: Resource | null;
   target: number | null;
+  home: number | null;
 };
 export type World = {
-  version: 1;
+  version: 2;
   seed: number;
   tick: number;
   tiles: Tile[];
@@ -88,7 +92,7 @@ export function createWorld(seed = 731): World {
       });
     }
   return {
-    version: 1,
+    version: 2,
     seed,
     tick: 0,
     tiles,
@@ -100,7 +104,9 @@ export function createWorld(seed = 731): World {
       energy: 90,
       health: 100,
       job: "Waiting",
-      priority: i === 1 ? "build" : "gather",
+      priorities: { gather: i === 1 ? 2 : 1, build: i === 1 ? 1 : 2 },
+      claim: null,
+      home: null,
       carry: null,
       target: null,
     })),
@@ -192,6 +198,7 @@ function log(w: World, s: string) {
 export function step(w: World): void {
   if (w.status !== "playing") return;
   w.tick++;
+  assignHomes(w);
   const cabins = w.tiles.filter(
       (t) => t.building === "cabin" && t.progress === 100,
     ),
@@ -209,6 +216,20 @@ export function step(w: World): void {
   if (w.tick % 60 === 0)
     for (const t of w.tiles)
       if (t.building === "garden" && t.progress === 100) w.stock.food += 8;
+  // Release interrupted reservations before any worker selects a new target.
+  for (const p of w.people) {
+    const t = p.claim === null ? undefined : w.tiles[p.claim];
+    if (
+      !t?.resource ||
+      !t.marked ||
+      p.carry ||
+      p.health <= 0 ||
+      (p.hunger - 0.16 < 65 && w.stock.food > 0) ||
+      p.energy - 0.12 < 25 ||
+      (night && p.energy - 0.12 < 90)
+    )
+      p.claim = null;
+  }
   for (const p of w.people) {
     if (p.health <= 0) {
       p.job = "Lost";
@@ -228,7 +249,7 @@ export function step(w: World): void {
     if (p.hunger === 0) p.health = Math.max(0, p.health - 0.25);
     else if (p.hunger > 50) p.health = Math.min(100, p.health + 0.03);
     if (p.energy < 25 || (night && p.energy < 90)) {
-      const bed = cabins[0];
+      const bed = p.home === null ? undefined : w.tiles[p.home];
       if (bed && !walk(w, p, bed.y * SIZE + bed.x)) {
         p.job = "Going to shelter";
         continue;
@@ -248,11 +269,15 @@ export function step(w: World): void {
     const tasks = w.tiles
       .map((t, i) => ({ t, i }))
       .filter(
-        ({ t }) => (t.marked && t.resource) || (t.building && t.progress < 100),
+        ({ t, i }) =>
+          (t.marked &&
+            t.resource &&
+            !w.people.some((other) => other !== p && other.claim === i)) ||
+          (t.building && t.progress < 100),
       );
     tasks.sort((a, b) => {
       const rank = (t: Tile) =>
-        (p.priority === "build" ? !!t.building : !!t.resource) ? 0 : 100;
+        p.priorities[t.resource ? "gather" : "build"] * 100;
       return (
         rank(a.t) -
         rank(b.t) +
@@ -266,6 +291,7 @@ export function step(w: World): void {
       ({ i }) =>
         i === p.y * SIZE + p.x || path(w, p.y * SIZE + p.x, i).length > 0,
     );
+    p.claim = task?.t.resource ? task.i : null;
     if (!task) {
       p.job = "Waiting";
       continue;
@@ -276,6 +302,7 @@ export function step(w: World): void {
     if (t.resource) {
       t.amount -= 4;
       p.carry = t.resource;
+      p.claim = null;
       if (t.amount <= 0) {
         t.resource = undefined;
         t.marked = false;
@@ -289,6 +316,7 @@ export function step(w: World): void {
         );
     }
   }
+  assignHomes(w);
   if (w.people.some((p) => p.health <= 0)) {
     w.status = "lost";
     log(w, "A settler was lost. Begin again with food and shelter first.");
@@ -306,9 +334,28 @@ export function serialize(w: World): string {
   return JSON.stringify(w);
 }
 export function restore(raw: string): World {
-  const w = JSON.parse(raw) as World;
+  const saved: unknown = JSON.parse(raw);
+  if (!saved || typeof saved !== "object" || !("version" in saved))
+    throw Error("Unsupported or damaged save");
+  if (saved.version === 1) {
+    if (!("people" in saved) || !Array.isArray(saved.people))
+      throw Error("Damaged save");
+    for (const p of saved.people) {
+      if (!p || !["gather", "build"].includes(p.priority))
+        throw Error("Damaged save");
+      p.priorities = {
+        gather: p.priority === "gather" ? 1 : 2,
+        build: p.priority === "build" ? 1 : 2,
+      };
+      p.home = null;
+      p.claim = null;
+      delete p.priority;
+    }
+    saved.version = 2;
+  }
+  const w = saved as World;
   if (
-    w.version !== 1 ||
+    w.version !== 2 ||
     !Number.isInteger(w.seed) ||
     !Number.isInteger(w.tick) ||
     w.tick < 0 ||
@@ -350,15 +397,58 @@ export function restore(raw: string): World {
         p.y >= 0 &&
         p.y < 20 &&
         [p.hunger, p.energy, p.health].every((v) => finite(v) && v <= 100) &&
-        ["gather", "build"].includes(p.priority) &&
+        p.priorities &&
+        [p.priorities.gather, p.priorities.build].every((n) =>
+          [1, 2, 3].includes(n),
+        ) &&
+        [p.home, p.claim].every(
+          (n) =>
+            n === null || (Number.isInteger(n) && n >= 0 && n < SIZE * SIZE),
+        ) &&
         (!p.carry || ["wood", "stone", "food"].includes(p.carry)),
     )
   )
     throw Error("Damaged save");
+  assignHomes(w);
   return w;
 }
 
-export function togglePriority(w: World, index: number): void {
+export function setPriority(
+  w: World,
+  index: number,
+  kind: WorkKind,
+  priority: Priority,
+): void {
   const p = w.people[index];
-  if (p) p.priority = p.priority === "build" ? "gather" : "build";
+  if (!p || ![1, 2, 3].includes(priority)) return;
+  p.priorities[kind] = priority;
+  p.claim = null;
+}
+
+/** Existing homes stay assigned; each completed cabin houses one living settler. */
+function assignHomes(w: World): void {
+  const occupied = new Set<number>();
+  for (const p of w.people) {
+    const t = p.home === null ? undefined : w.tiles[p.home];
+    if (
+      p.health <= 0 ||
+      !t ||
+      t.building !== "cabin" ||
+      t.progress !== 100 ||
+      occupied.has(p.home!)
+    )
+      p.home = null;
+    else occupied.add(p.home!);
+  }
+  for (const p of w.people) {
+    if (p.home !== null || p.health <= 0) continue;
+    const i = w.tiles.findIndex(
+      (t, i) =>
+        t.building === "cabin" && t.progress === 100 && !occupied.has(i),
+    );
+    if (i >= 0) {
+      p.home = i;
+      occupied.add(i);
+    }
+  }
 }

@@ -11,6 +11,10 @@ GitHub tracking: [foundation #1](https://github.com/12nuskek/Hearthline/issues/1
 - Pause/1×/3×, touch/desktop pan and zoom, local save/load/reset and autosave.
 - Deterministic replay and full-loop tests, browser checks, strict TypeScript, lint/build, CI artifacts.
 
+## Current iteration: homes, work and accessible map controls
+
+Selected acceptance criteria from #2: stable one-settler cabin assignments; 1–3 gather/build priorities; exclusive resource claims with interruption recovery; keyboard tile selection, live descriptions and apply controls; migration of existing version-1 saves. Map-seed selection and physical-device validation remain future work.
+
 ## Next issue: richer work and shelter
 Acceptance: individual bed assignments; limited cabin capacity; per-job numeric priorities; resource claims prevent duplicate travel; regression tests for interrupted work.
 

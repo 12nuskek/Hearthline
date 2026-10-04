@@ -617,3 +617,91 @@ dialog button {
     padding: 22px;
   }
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+canvas:focus-visible {
+  outline: 3px solid #c17a44;
+  outline-offset: -4px;
+}
+.priority-help {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #697762;
+  margin: 10px 0 0;
+}
+.work-priorities {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.person .work-priorities button {
+  min-height: 36px;
+  min-width: 70px;
+  padding: 6px 8px;
+  background: #e8eadc;
+  border: 1px solid #d4dac7;
+  font-size: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.work-priorities b {
+  color: #375744;
+}
+.person .home-button {
+  padding: 3px 0;
+  min-height: 30px;
+  font-size: 9px;
+  color: #586e52;
+  text-align: left;
+}
+#tile-inspector {
+  padding: 14px;
+  border: 1px solid #c9d3b8;
+  background: #e9eddf;
+  border-radius: 7px;
+  margin-bottom: 22px;
+}
+#tile-description {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 10px 0;
+}
+.tile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tile-actions button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 5px;
+}
+.tile-actions #apply-tool {
+  width: 100%;
+  background: #294c3d;
+  color: #f3f1df;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .person .work-priorities button {
+    min-height: 44px;
+    min-width: 80px;
+  }
+  .person .home-button {
+    min-height: 44px;
+  }
+  .tile-actions #apply-tool {
+    width: auto;
+    flex: 1;
+  }
+}
