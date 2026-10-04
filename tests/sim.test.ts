@@ -89,6 +89,6 @@ test("malformed saves are rejected", () => {
 });
 test("untrusted save display fields cannot inject markup", () => {
   const w = createWorld();
-  w.people[0].job = "<img src=x onerror=alert(1)>";
+  Object.assign(w.people[0], { job: "<img src=x onerror=alert(1)>" });
   expect(() => restore(serialize(w))).toThrow();
 });

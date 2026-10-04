@@ -1,5 +1,7 @@
 # Hearthline roadmap and release scope
 
+GitHub tracking: [foundation #1](https://github.com/12nuskek/Hearthline/issues/1), [work/accessibility #2](https://github.com/12nuskek/Hearthline/issues/2), [Sites release #3](https://github.com/12nuskek/Hearthline/issues/3).
+
 ## Foundation acceptance criteria
 - Seeded voxel landscape, readable settlers and distinct buildings.
 - Mark resources, harvest and haul into shared stores; reserve/refund construction materials.

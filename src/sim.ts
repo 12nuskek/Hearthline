@@ -12,6 +12,19 @@ export type Tile = {
   building?: Building;
   progress: number;
 };
+export const JOBS = [
+  "Waiting",
+  "Lost",
+  "Eating",
+  "Going to eat",
+  "Going to shelter",
+  "Resting inside",
+  "Resting outdoors",
+  "Unloading",
+  "Hauling",
+  "Gathering",
+  "Building",
+] as const;
 export type Person = {
   name: string;
   x: number;
@@ -19,7 +32,7 @@ export type Person = {
   hunger: number;
   energy: number;
   health: number;
-  job: string;
+  job: (typeof JOBS)[number];
   priority: "gather" | "build";
   carry: Resource | null;
   target: number | null;
@@ -329,19 +342,7 @@ export function restore(raw: string): World {
     !w.people.every(
       (p) =>
         ["Jun", "Mira", "Oren"].includes(p.name) &&
-        [
-          "Waiting",
-          "Lost",
-          "Eating",
-          "Going to eat",
-          "Going to shelter",
-          "Resting inside",
-          "Resting outdoors",
-          "Unloading",
-          "Hauling",
-          "Gathering",
-          "Building",
-        ].includes(p.job) &&
+        JOBS.includes(p.job) &&
         Number.isInteger(p.x) &&
         p.x >= 0 &&
         p.x < 20 &&
@@ -355,4 +356,9 @@ export function restore(raw: string): World {
   )
     throw Error("Damaged save");
   return w;
+}
+
+export function togglePriority(w: World, index: number): void {
+  const p = w.people[index];
+  if (p) p.priority = p.priority === "build" ? "gather" : "build";
 }

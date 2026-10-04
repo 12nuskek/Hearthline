@@ -6,6 +6,7 @@ import {
   serialize,
   restore,
   DAY,
+  togglePriority,
   type Building,
 } from "./sim";
 import { Renderer } from "./renderer";
@@ -119,8 +120,7 @@ $("#people").onclick = (e) => {
     "[data-person]",
   );
   if (b) {
-    const p = world.people[Number(b.dataset.person)];
-    p.priority = p.priority === "build" ? "gather" : "build";
+    togglePriority(world, Number(b.dataset.person));
     renderUI();
   }
 };
@@ -206,11 +206,7 @@ canvas.onwheel = (e) => {
   );
 };
 window.onkeydown = (e) => {
-  if (
-    document.querySelector("dialog[open]") ||
-    (e.target as HTMLElement).tagName === "BUTTON"
-  )
-    return;
+  if (document.querySelector("dialog[open]")) return;
   if (e.code === "Space") {
     e.preventDefault();
     setSpeed(speed ? 0 : 1);
@@ -240,6 +236,15 @@ function frame(now: number) {
     renderUI();
   }
   requestAnimationFrame(frame);
+}
+try {
+  const saved = localStorage.getItem(KEY);
+  if (saved) {
+    world = restore(saved);
+    toast("Settlement restored. Time is paused.");
+  }
+} catch {
+  toast("Saved data could not be restored. Start again or load a valid save.");
 }
 renderUI();
 requestAnimationFrame(frame);

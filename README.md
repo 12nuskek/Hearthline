@@ -6,7 +6,7 @@ An original, local-first voxel colony game for a browser. Three travelers arrive
 
 Start with **1×**. Select **Gather**, then tap trees, berry bushes or stone blocks. Settlers harvest and haul to the central hearth. Place a **garden** and a **cabin** on clear tiles; materials are reserved immediately. Gather more supplies to build two more cabins and a beacon. A garden provides 8 food each minute. Click each settler's priority to favor gathering or building. Eating, rest and hauling are automatic.
 
-Drag to pan, scroll or +/− to zoom, tap to select. Space pauses; 1/3 select speed. Touch uses the same tools and one-finger drag. The field guide is under **?**. The simulation starts paused and pauses when its tab is hidden. Save/Load use this browser's local storage; autosave runs every 30 seconds. Load is explicit after refresh. Reset asks before replacing the save. Storage failure is reported.
+Drag to pan, scroll or +/− to zoom, tap to select. Space pauses; 1/3 select speed. Touch uses the same tools and one-finger drag. The field guide is under **?**. The simulation starts paused and pauses when its tab is hidden. Save/Load use this browser's local storage; autosave runs every 30 seconds. Valid saves restore automatically after refresh, with time paused. Reset asks before replacing the save. Storage failure is reported.
 
 ## Develop and verify
 

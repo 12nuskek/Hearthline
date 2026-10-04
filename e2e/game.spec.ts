@@ -93,3 +93,98 @@ test("map tools construct, cancel and gather through real pointer input", async 
   await tile(resource.x, resource.y);
   await expect(page.getByRole("status")).toContainText("marked");
 });
+test("refresh preserves saved settlement before visibility pause and shortcuts work after clicking", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Fast speed" }).click();
+  await page.waitForTimeout(1100);
+  await page.keyboard.press("Space");
+  await expect(
+    page.getByRole("button", { name: "Pause", exact: true }),
+  ).toHaveClass("active");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const before = await page.evaluate(() =>
+    localStorage.getItem("hearthline.save.v1"),
+  );
+  await page.reload();
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: true,
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  expect(
+    await page.evaluate(() => localStorage.getItem("hearthline.save.v1")),
+  ).toBe(before);
+});
+test("touch assignment, drag and cancelled gesture on phone", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  await page.goto("http://127.0.0.1:4173");
+  await page.locator('[data-tool="cabin"]').tap();
+  const box = (await page.locator("canvas").boundingBox())!;
+  const s = Math.min(box.width / 43, box.height / 25);
+  const x = box.x + box.width / 2,
+    y = box.y + box.height * 0.35 + 15 * s * 0.5 - 0.23 * s;
+  await page.touchscreen.tap(x, y);
+  await expect(page.getByRole("status")).toContainText("planned");
+  const client = await context.newCDPSession(page);
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x, y }],
+  });
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: x + 45, y: y + 30 }],
+  });
+  await client.send("Input.dispatchTouchEvent", {
+    type: "touchCancel",
+    touchPoints: [],
+  });
+  await page.getByRole("button", { name: "Center map" }).tap();
+  await page.locator('[data-tool="cancel"]').tap();
+  await page.touchscreen.tap(x, y);
+  await expect(page.getByRole("status")).toContainText("returned");
+  await context.close();
+});
+test("a completed simulation restores as a visible terminal settlement", async ({
+  page,
+}) => {
+  const { createWorld, command, step, serialize } = await import("../src/sim");
+  const w = createWorld();
+  w.tiles.forEach((t, i) => {
+    if (t.resource) command(w, i, "gather");
+  });
+  command(w, 147, "garden");
+  command(w, 148, "cabin");
+  let cabins = 1,
+    beacon = false;
+  for (let n = 0; n < 1200 && w.status === "playing"; n++) {
+    if (cabins < 3 && w.stock.wood >= 12 && w.stock.stone >= 4) {
+      command(w, 148 + cabins, "cabin");
+      cabins++;
+    }
+    if (!beacon && cabins === 3 && w.stock.wood >= 16 && w.stock.stone >= 12) {
+      command(w, 151, "beacon");
+      beacon = true;
+    }
+    step(w);
+  }
+  expect(w.status).toBe("won");
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.addInitScript(
+    (raw) => localStorage.setItem("hearthline.save.v1", raw),
+    serialize(w),
+  );
+  await page.goto("/");
+  await expect(page.locator("#hint")).toContainText("A home at last");
+  await page.screenshot({ path: "/tmp/hearthline-victory.png" });
+});
